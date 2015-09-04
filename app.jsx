@@ -4,15 +4,36 @@ App = React.createClass({
   // Este mixin hace que el metodo getMeteorData funcione
   mixins: [ReactMeteorData],
 
+    //Obtiene el estado inicial del componente que es false
+    getInitialState() {
+    return {
+      hideCompleted: false
+    }
+  },
+
   // Carga los items de la collection y los pone en this.data.tasks
   getMeteorData() {
+    //let para variables locales que se deben inicializar. en query se guarda el resultado de la consulta
+    let query = {};
+
+     // si hidecompleted es cliqueado, se activa el query
+    if (this.state.hideCompleted) {
+      //consulta que trae los task con checked:false o sea lo que no estan completados
+      //$ne en mongodb trae lo que son != diferentes al campo especificado
+      query = {checked: {$ne: true}};
+    }
 
     return {
       //organiza los elementos desde el mas nuevo el -1 lo indica
-      tasks: Tasks.find({}, {sort: {createdAt: -1}}).fetch()
-    }
+      tasks: Tasks.find(query, {sort: {createdAt: -1}}).fetch(),
+      //variable que cuenta las incompletas. yo le pase el query para ahorrar codigo
+      //en el tuto esta escrito completo
+      incompleteCount: Tasks.find(query).count()
+
+    };
 
   },
+
 
   renderTasks() {
 
@@ -45,6 +66,14 @@ App = React.createClass({
 
   },
 
+  //metodo que cambia el estado de hideCompleted
+  toggleHideCompleted() {
+    this.setState({
+      //niega el estado con ! es decir lo cambia de false a true
+      hideCompleted: ! this.state.hideCompleted
+    });
+
+  },
 
  
   //metodo que renderiza
@@ -56,7 +85,16 @@ App = React.createClass({
 
         <header>
 
-          <h1>Todo List</h1>
+          <h1>Todo List ({this.data.incompleteCount})</h1>
+
+         <label className="hide-completed">
+            <input
+              type="checkbox"
+              readOnly={true}
+              checked={this.state.hideCompleted}
+              onClick={this.toggleHideCompleted} />
+                Hide Completed Tasks
+          </label>
           
          <form className="new-task" onSubmit={this.handleSubmit} >
             <input
